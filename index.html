@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FILO — Video File Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#1B1717;--card:#241D1D;--tx:#EDEBDD;--mu:#a59f92;--bd:rgba(237,235,221,.14);--ac:#810100;--ac2:#630000;--hi:#d4574f;--on:#EDEBDD;
+--hero:linear-gradient(155deg,#630000 0%,#2a0c0c 70%,#1B1717 100%)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#EDEBDD;--card:#F5F3E8;--tx:#1B1717;--mu:#6e6560;--bd:rgba(27,23,23,.16);--hi:#810100;--hero:linear-gradient(155deg,#810100 0%,#630000 100%)}}
+:root[data-theme="light"]{--bg:#EDEBDD;--card:#F5F3E8;--tx:#1B1717;--mu:#6e6560;--bd:rgba(27,23,23,.16);--hi:#810100;--hero:linear-gradient(155deg,#810100 0%,#630000 100%)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.serif{font-family:"Playfair Display",Georgia,"Times New Roman",serif}
+main{max-width:680px;margin:0 auto;padding:0 18px 48px}
+.hero{background:var(--hero);color:#EDEBDD;margin:0 -18px 22px;padding:34px 22px 30px;border-radius:0 0 28px 28px}
+.hero small{letter-spacing:.28em;font-size:11px;opacity:.75;text-transform:uppercase}
+.hero h1{font-family:"Playfair Display",Georgia,serif;font-size:44px;line-height:1.05;margin:8px 0 6px;font-weight:700}
+.hero p{margin:0;opacity:.8;font-style:italic;font-family:"Playfair Display",Georgia,serif}
+.row{display:flex;gap:10px;align-items:center}
+.grow{flex:1;min-width:0}
+input[type=text]{flex:1;min-width:0;padding:13px 14px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;outline:none}
+input[type=text]:focus{border-color:var(--hi)}
+button{font:inherit;font-weight:500;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx);border-radius:12px;padding:10px 15px}
+button.p{background:var(--ac);border-color:var(--ac);color:#EDEBDD}
+button.p:active{background:var(--ac2)}
+button.g{border:none;color:var(--mu);padding:8px 10px}
+button.d{color:var(--hi)}
+.vcard{display:flex;align-items:center;gap:16px;padding:18px 4px;border-bottom:1px solid var(--bd);cursor:pointer}
+.num{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-size:22px;color:var(--hi);width:34px}
+.t{font-family:"Playfair Display",Georgia,serif;font-size:19px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s{color:var(--mu);font-size:13px}
+.pill{font-size:11px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--hi);color:var(--hi);padding:4px 10px;border-radius:99px;white-space:nowrap}
+.empty{text-align:center;color:var(--mu);padding:46px 10px;font-family:"Playfair Display",Georgia,serif;font-style:italic;font-size:18px}
+.top{padding-top:18px}
+h2.title{font-family:"Playfair Display",Georgia,serif;font-size:34px;line-height:1.1;margin:22px 0 10px;font-weight:700}
+select{font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+.sec{margin-top:28px}
+.sh{display:flex;align-items:baseline;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--tx)}
+.sh h3{margin:0;font-family:"Playfair Display",Georgia,serif;font-size:22px;font-weight:500}
+.sh .k{color:var(--hi);font-style:italic;font-family:"Playfair Display",Georgia,serif}
+.f{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drop{border:1px dashed var(--bd);border-radius:14px;padding:14px;text-align:center;color:var(--mu);font-size:13px;margin-top:12px}
+.drop.on{border-color:var(--hi);color:var(--hi)}
+#modal{position:fixed;inset:0;background:rgba(10,4,4,.85);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#modal.show{display:flex}
+#modal .box{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:16px;max-width:100%;max-height:90%;overflow:auto;width:min(560px,100%)}
+#modal img,#modal video{max-width:100%;max-height:60vh;display:block;margin:12px auto;border-radius:10px}
+#modal audio{width:100%;margin:12px 0}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div id="modal"><div class="box" id="mbox"></div></div>
+<script>
+const CATS=["Script","Footage","Audio","Graphics","Thumbnail","Other"];
+const STATUS=["Idea","Scripting","Shooting","Editing","Published"];
+let db=null,mem={videos:[],files:[]},videos=[],files=[],cur=null,note="",ren=false,cd=false;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const size=n=>n>1e9?(n/1e9).toFixed(2)+" GB":n>1e6?(n/1e6).toFixed(1)+" MB":Math.max(1,Math.round(n/1e3))+" KB";
+const pad=n=>String(n).padStart(2,"0");
+
+function open(){return new Promise(res=>{try{const r=indexedDB.open("ytfm",1);
+r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("videos",{keyPath:"id"});d.createObjectStore("files",{keyPath:"id"})};
+r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}})}
+function run(store,mode,fn){return new Promise(res=>{try{const t=db.transaction(store,mode),s=t.objectStore(store);const q=fn(s);
+if(q&&q.onsuccess!==undefined){q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)}else t.oncomplete=()=>res()}catch(e){res(null)}})}
+const getAll=st=>db?run(st,"readonly",s=>s.getAll()):Promise.resolve(mem[st].slice());
+const put=(st,o)=>{if(!db){const i=mem[st].findIndex(x=>x.id===o.id);i<0?mem[st].push(o):mem[st][i]=o;return Promise.resolve()}return run(st,"readwrite",s=>s.put(o))};
+const del=(st,id)=>{if(!db){mem[st]=mem[st].filter(x=>x.id!==id);return Promise.resolve()}return run(st,"readwrite",s=>s.delete(id))};
+
+async function load(){videos=(await getAll("videos")||[]).sort((a,b)=>a.created-b.created);files=await getAll("files")||[];render()}
+
+function render(){
+ const a=document.getElementById("app");
+ if(!cur){
+  a.innerHTML=`<div class="hero"><small>Video file manager</small><h1>FILO</h1><p>Every video, its own folder.</p></div>
+  <div class="row"><input type="text" id="nv" placeholder="Name your next video"><button class="p" onclick="addVideo()">Add</button></div>
+  ${note?`<div class="s" style="margin-top:10px">${note}</div>`:""}
+  <div style="margin-top:14px">${videos.length?videos.map((v,i)=>{const fs=files.filter(f=>f.videoId===v.id);
+   return `<div class="vcard" onclick="cur='${v.id}';ren=false;cd=false;render();scrollTo(0,0)"><div class="num">${pad(i+1)}</div><div class="grow"><div class="t">${esc(v.title)}</div><div class="s">${fs.length} files · ${size(fs.reduce((x,f)=>x+f.size,0))}</div></div><span class="pill">${v.status}</span></div>`}).join(""):`<div class="empty">No videos yet.<br>Name one above to begin.</div>`}</div>`;
+  document.getElementById("nv").onkeydown=e=>{if(e.key==="Enter")addVideo()};
+  return}
+ const v=videos.find(x=>x.id===cur);if(!v){cur=null;render();return}
+ const fs=files.filter(f=>f.videoId===v.id);
+ a.innerHTML=`<div class="top row"><button onclick="cur=null;render()">← All videos</button><div class="grow"></div>
+  <button class="g" onclick="ren=!ren;render()">Rename</button><button class="g d" onclick="askDel()">${cd?"Tap again to confirm":"Delete"}</button></div>
+ ${ren?`<div class="row" style="margin-top:22px"><input type="text" id="rn" value="${esc(v.title)}"><button class="p" onclick="saveName()">Save</button></div>`:`<h2 class="title">${esc(v.title)}</h2>`}
+ <div class="row s"><select onchange="setStatus(this.value)">${STATUS.map(s=>`<option ${s===v.status?"selected":""}>${s}</option>`).join("")}</select><span>${fs.length} files · ${size(fs.reduce((x,f)=>x+f.size,0))}</span></div>
+ ${CATS.map((c,i)=>{const cf=fs.filter(f=>f.cat===c);
+  return `<div class="sec"><div class="sh"><span class="k">${pad(i+1)}</span><h3 class="grow">${c}</h3><span class="s">${cf.length}</span><button class="p" onclick="pick('${c}')">Add files</button></div>
+  ${cf.map(f=>`<div class="f"><div class="grow"><div class="fn">${esc(f.name)}</div><div class="s">${size(f.size)}</div></div><button onclick="view('${f.id}')">View</button><button class="g" onclick="delFile('${f.id}')">Remove</button></div>`).join("")}
+  <div class="drop" data-c="${c}">Drop files here</div></div>`}).join("")}`;
+ a.querySelectorAll(".drop").forEach(d=>{
+  d.ondragover=e=>{e.preventDefault();d.classList.add("on")};
+  d.ondragleave=()=>d.classList.remove("on");
+  d.ondrop=e=>{e.preventDefault();d.classList.remove("on");addFiles(d.dataset.c,e.dataTransfer.files)}});
+}
+async function addVideo(){const i=document.getElementById("nv"),t=i.value.trim();if(!t)return;
+ await put("videos",{id:uid(),title:t,status:"Idea",created:Date.now()});if(!db)note="Browser storage is unavailable, so files will only last for this session.";await load()}
+async function saveName(){const n=document.getElementById("rn").value.trim();if(!n)return;const v=videos.find(x=>x.id===cur);v.title=n;ren=false;await put("videos",v);render()}
+async function setStatus(s){const v=videos.find(x=>x.id===cur);v.status=s;await put("videos",v)}
+function askDel(){if(!cd){cd=true;render();setTimeout(()=>{if(cd){cd=false;render()}},4000);return}delVideo()}
+async function delVideo(){for(const f of files.filter(f=>f.videoId===cur))await del("files",f.id);await del("videos",cur);cur=null;cd=false;await load()}
+function pick(c){const i=document.createElement("input");i.type="file";i.multiple=true;i.onchange=()=>addFiles(c,i.files);i.click()}
+async function addFiles(c,list){for(const f of list){await put("files",{id:uid(),videoId:cur,cat:c,name:f.name,size:f.size,type:f.type,blob:f,added:Date.now()})}await load()}
+async function delFile(id){await del("files",id);await load()}
+function view(id){const f=files.find(x=>x.id===id),u=URL.createObjectURL(f.blob),m=document.getElementById("modal"),b=document.getElementById("mbox");
+ let p=`<div class="s" style="margin:12px 0">No preview available for this file type.</div>`;
+ if(f.type.startsWith("image/"))p=`<img src="${u}">`;else if(f.type.startsWith("video/"))p=`<video src="${u}" controls></video>`;else if(f.type.startsWith("audio/"))p=`<audio src="${u}" controls></audio>`;
+ b.innerHTML=`<div class="t">${esc(f.name)}</div><div class="s">${size(f.size)} · ${esc(f.type||"unknown type")}</div>${p}<button class="p" onclick="closeM()" style="width:100%">Close</button>`;
+ m.classList.add("show");m.dataset.u=u}
+function closeM(){const m=document.getElementById("modal");m.classList.remove("show");if(m.dataset.u)URL.revokeObjectURL(m.dataset.u);document.getElementById("mbox").innerHTML=""}
+document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeM()};
+open().then(d=>{db=d;if(!d)note="Browser storage is unavailable, so files will only last for this session.";load()});
+</script>
+</body>
+</html>
