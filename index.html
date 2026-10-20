@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FILO — Video File Manager</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#630000">
+<meta name="description" content="Every video, its own folder.">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
@@ -117,6 +122,7 @@ function view(id){const f=files.find(x=>x.id===id),u=URL.createObjectURL(f.blob)
  m.classList.add("show");m.dataset.u=u}
 function closeM(){const m=document.getElementById("modal");m.classList.remove("show");if(m.dataset.u)URL.revokeObjectURL(m.dataset.u);document.getElementById("mbox").innerHTML=""}
 document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")closeM()};
+if("serviceWorker" in navigator)addEventListener("load",()=>{try{navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}});
 open().then(d=>{db=d;if(!d)note="Browser storage is unavailable, so files will only last for this session.";load()});
 </script>
 </body>
